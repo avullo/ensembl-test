@@ -79,6 +79,7 @@ use File::Temp;
 use File::Spec;
 use File::Spec::Functions;
 use Bio::EnsEMBL::Test::MultiTestDB;
+use Bio::EnsEMBL::Hive::Version;
 
 use Bio::EnsEMBL::Registry;
 
@@ -97,10 +98,19 @@ sub init_pipeline {
   
   my $dba = $self->pipe_db();
   my $dbc = $dba->dbc();
-  my $run = sprintf(
+  my $run;
+  my $hive_version = Bio::EnsEMBL::Hive::Version->get_code_version();
+  if ($hive_version >= 2.3) {
+    $run = sprintf(
+    "init_pipeline.pl %s -registry %s -hive_host %s -hive_port %s -hive_dbname %s -hive_password '%s' -hive_user %s %s",
+    $pipeline, $self->reg_file(), $dbc->host(), $dbc->port(), $dbc->dbname(), $dbc->password(), $dbc->user(), $self->pipe_options
+  );
+  } else {
+    $run = sprintf(
     "init_pipeline.pl %s -registry %s -pipeline_db -host=%s -pipeline_db -port=%s -pipeline_name=%s -password '%s' -pipeline_db -dbname=%s -user=%s %s",
     $pipeline, $self->reg_file(), $dbc->host(), $dbc->port(), $dbc->dbname(), $dbc->password(), $dbc->dbname(), $dbc->user(), $self->pipe_options 
   );
+  }
   $self->builder()->note("Initiating pipeline");
   $self->builder()->note($run);
   my $status = system($run);
